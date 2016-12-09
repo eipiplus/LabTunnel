@@ -14,6 +14,7 @@ class NWGraph(object):
         self.E = ()
         self.G = ()
         self.V = 0
+        self.VList=""
         pass
 
     def loadGraph(self, filenm):
@@ -24,7 +25,7 @@ class NWGraph(object):
 
         """
         Ei=[]
-        with open('graph.txt') as f:
+        with open(filenm)as f:
             tag=True
             for line in f:
                 if tag:
@@ -36,12 +37,13 @@ class NWGraph(object):
         Ei = tuple(Ei)
         self.E = Ei
         self.G = (self.V,self.E)
+        self.VList = [i for i in xrange(self.V)]
         pass
 
 
         
 
-    def Vnext(self,i):
+    def next_V_L(self,i):
         """
         return vertex and length
         """
@@ -50,7 +52,16 @@ class NWGraph(object):
             if e != 0:
                 yield (v,e)
 
-    def isVnext(self,i,ni):
+    def next_V(self,i):
+        """
+        return vertex and length
+        """
+        Vi,Ei=self.G
+        for v,e in enumerate(Ei[i]):
+            if e != 0:
+                yield v
+
+    def isAdjV(self,i,ni):
         """TODO: return whether the i is point to ni.
 
         :Gi: graph
@@ -59,7 +70,7 @@ class NWGraph(object):
         :returns: boolean
 
         """
-        for v,e in Vnext(Gi,i):
+        for v,e in self.next_V_L(i):
             if v == ni:
                 return True
         return False
@@ -79,7 +90,7 @@ class NWGraph(object):
         record=[vxi]
         while(len(record)<=Vi):
             e = record[-1]
-            for ve,le in self.Vnext(e):
+            for ve,le in self.next_V_L(e):
                 nlgth = lgth[e]+le
                 if nlgth < lgth[ve]:
                     lgth[ve] = nlgth
@@ -101,24 +112,63 @@ class NWGraph(object):
     def dijkpath(self,v):
         """TODO: return all the shortest path;
         From source node v to the other nodes.
+        return result is iterator
         """
         vi,ei=self.G
-        paths=[]
+        paths=[[v]]
         pre,nxt,lth = self.dijkstra(v)
-        tmp=[[v]]; ctmp=[]
+        tmp=[v]; 
         for i in xrange(vi):
+            ctmp=[];cpaths=[];
             if tmp == []:
                 break
-            for ei in tmp:
-                ctmp += [ ei+[a] for a in nxt[ei[-1]] ]
+            for x,e in enumerate(tmp):
+                "this circle is used for all next point"
+                for nxte in nxt[e]:
+                    cpaths.append(paths[x]+[nxte])
+                    ctmp.append(nxte)
+                yield paths[x]
             tmp = ctmp
-            ctmp = []
-            paths += tmp
-        return paths
+            paths = cpaths
+
+    def allpath(self):
+        """To Find all the potential path for a Graph
+        :returns: iterator
+
+        """
+        "this circle is used to search all source node"
+        for v in xrange(G.V):
+            tmp = [v]
+            paths = [[v]]
+            "second circle is used to search all path(control the path length)"
+            for _ in xrange(G.V):
+                cptmp = []
+                cppaths = []
+                if tmp == []:
+                    break
+                "third circle is used to generate new path"
+                for x,ve in enumerate(tmp):
+                    "Find potential path(loop free)"
+                    for vaft in self.next_V(ve):
+                        if vaft not in paths[x]:
+                            cppaths.append(paths[x]+[vaft])
+                            cptmp.append(vaft)
+                    if len(paths[x]) > 1:
+                       yield paths[x]
+                tmp = cptmp
+                paths = cppaths
+
+
+
+        pass
 
 
 #G=loadGraph()
 #a,b = dijkstra(G,5)
 G=NWGraph()
-G.loadGraph("graph.txt")
-print G.dijkpath(0)
+G.loadGraph("testgraph.txt")
+for e in G.VList:
+    for path in G.dijkpath(e):
+        print path
+for e in G.allpath():
+    print e
